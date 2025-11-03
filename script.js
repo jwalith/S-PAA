@@ -94,6 +94,40 @@ async function loadDataFromCSV() {
     }
 }
 
+// Proper CSV parser that handles quoted fields with commas
+function parseCSVLine(line) {
+    const values = [];
+    let current = '';
+    let insideQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        const nextChar = line[i + 1];
+        
+        if (char === '"') {
+            if (insideQuotes && nextChar === '"') {
+                // Escaped quote
+                current += '"';
+                i++; // Skip next quote
+            } else {
+                // Toggle quote state
+                insideQuotes = !insideQuotes;
+            }
+        } else if (char === ',' && !insideQuotes) {
+            // Field separator
+            values.push(current.trim());
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    
+    // Add last field
+    values.push(current.trim());
+    
+    return values;
+}
+
 function parseCSV(csvText) {
     const lines = csvText.split('\n');
     const organizations = [];
@@ -103,15 +137,16 @@ function parseCSV(csvText) {
         return organizations;
     }
     
-    // Get headers (first line)
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    // Get headers (first line) - use proper CSV parsing
+    const headers = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase().replace(/^"|"$/g, ''));
     
     // Process data lines
     for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) continue; // Skip empty lines
         
-        const values = line.split(',').map(v => v.trim());
+        // Use proper CSV parser to handle quoted fields
+        const values = parseCSVLine(line).map(v => v.replace(/^"|"$/g, '')); // Remove quotes
         
         if (values.length >= headers.length) {
             const org = {};

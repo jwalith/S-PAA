@@ -52,6 +52,10 @@ retryBtn.addEventListener('click', retryLoadData);
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
+    // Setup event delegation for action buttons (once on page load)
+    setupActionButtons();
+    
+    // Load data from CSV
     loadDataFromCSV();
 });
 
@@ -311,7 +315,7 @@ function showUserMessage(message, type = 'info') {
     messageDiv.className = `user-message ${type}`;
     messageDiv.innerHTML = `
         <div class="message-content">
-            <span class="message-icon">${type === 'error' ? '⚠️' : type === 'warning' ? '⚠️' : 'ℹ️'}</span>
+            <span class="message-icon">${type === 'error' ? '⚠️' : type === 'warning' ? '⚠️' : type === 'success' ? '✅' : 'ℹ️'}</span>
             <span class="message-text">${message}</span>
             <button class="message-close" onclick="this.parentElement.parentElement.remove()">×</button>
         </div>
@@ -335,6 +339,7 @@ function showUserMessage(message, type = 'info') {
             }
             .user-message.error { border-left: 4px solid #ef4444; }
             .user-message.warning { border-left: 4px solid #f59e0b; }
+            .user-message.success { border-left: 4px solid #10b981; }
             .user-message.info { border-left: 4px solid #3b82f6; }
             .message-content {
                 display: flex;
@@ -499,6 +504,33 @@ function displayResults(results, searchContext = {}) {
     }, 100);
 }
 
+// Setup event delegation for action buttons (called once on page load)
+function setupActionButtons() {
+    // Wait for resultsContainer to be available
+    if (!resultsContainer) {
+        setTimeout(setupActionButtons, 100);
+        return;
+    }
+    
+    // Event delegation - handles clicks on dynamically added buttons
+    resultsContainer.addEventListener('click', function(e) {
+        const button = e.target.closest('.action-btn');
+        if (!button) return;
+        
+        const action = button.getAttribute('data-action');
+        const text = button.getAttribute('data-text');
+        const message = button.getAttribute('data-message');
+        
+        if (action === 'copy') {
+            copyToClipboard(text, message || 'Copied to clipboard!');
+        } else if (action === 'search') {
+            searchOnGoogle(text);
+        } else if (action === 'directions') {
+            getDirections(text);
+        }
+    });
+}
+
 function generateNoResultsMessage(searchContext) {
     const { zipCode, state, housingType, radius, searchType } = searchContext;
     
@@ -588,9 +620,69 @@ function createResultCard(org) {
             </div>
             ` : ''}
         </div>
+        <div class="card-actions">
+            <button class="action-btn copy-name-btn" data-action="copy" data-text="${escapeHtml(org.name)}" data-message="Organization name copied!" title="Copy organization name">
+                <span class="btn-icon">📋</span>
+                <span class="btn-text">Copy Name</span>
+            </button>
+            <button class="action-btn search-btn" data-action="search" data-text="${escapeHtml(org.name)}" title="Search on Google">
+                <span class="btn-icon">🔍</span>
+                <span class="btn-text">Search Web</span>
+            </button>
+            ${org.address ? `
+            <button class="action-btn directions-btn" data-action="directions" data-text="${escapeHtml(org.address)}" title="Get directions">
+                <span class="btn-icon">📍</span>
+                <span class="btn-text">Directions</span>
+            </button>
+            ` : ''}
+        </div>
     `;
     
     return card;
+}
+
+// Escape HTML to prevent XSS issues
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Copy to clipboard helper function
+function copyToClipboard(text, message) {
+    // Remove HTML tags if any
+    const cleanText = text.replace(/<[^>]*>/g, '');
+    
+    navigator.clipboard.writeText(cleanText).then(() => {
+        showUserMessage(message || 'Copied to clipboard!', 'success');
+    }).catch(() => {
+        // Fallback for older browsers
+        const textarea = document.createElement('textarea');
+        textarea.value = cleanText;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            showUserMessage(message || 'Copied to clipboard!', 'success');
+        } catch (err) {
+            showUserMessage('Unable to copy. Please select and copy manually.', 'warning');
+        }
+        document.body.removeChild(textarea);
+    });
+}
+
+// Search on Google helper function
+function searchOnGoogle(searchTerm) {
+    const query = encodeURIComponent(searchTerm.trim());
+    window.open(`https://www.google.com/search?q=${query}`, '_blank', 'noopener,noreferrer');
+}
+
+// Get directions helper function
+function getDirections(address) {
+    const query = encodeURIComponent(address.trim());
+    window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank', 'noopener,noreferrer');
 }
 
 function showLoading() {

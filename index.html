@@ -6,6 +6,13 @@
     <title>Find Mental Health & Housing Services</title>
     <meta name="description" content="Find mental health and housing services near you. Search by location to find support organizations.">
     <link rel="stylesheet" href="styles.css">
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet Heat Map Plugin CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.css" />
+    <!-- Leaflet Marker Cluster CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
 </head>
 <body>
     <div class="container">
@@ -109,8 +116,52 @@
                     <button id="newSearchBtn" class="btn-outline">New Search</button>
                 </div>
             </div>
-            <div class="results-container" id="resultsContainer">
-                <!-- Results will be populated here -->
+            
+            <!-- Tab Interface -->
+            <div class="view-tabs">
+                <button class="tab-btn active" id="listTabBtn" data-view="list">
+                    <span class="tab-icon">📋</span>
+                    <span class="tab-text">List View</span>
+                </button>
+                <button class="tab-btn" id="mapTabBtn" data-view="map">
+                    <span class="tab-icon">🗺️</span>
+                    <span class="tab-text">Map View</span>
+                </button>
+            </div>
+            
+            <!-- List View Container -->
+            <div class="view-container" id="listView">
+                <div class="results-container" id="resultsContainer">
+                    <!-- Results will be populated here -->
+                </div>
+            </div>
+            
+            <!-- Map View Container -->
+            <div class="view-container" id="mapView" style="display: none;">
+                <div class="map-controls">
+                    <div class="map-control-group">
+                        <label for="mapViewToggle" class="map-control-label">
+                            <input type="checkbox" id="mapViewToggle" checked>
+                            <span>Show Heat Map</span>
+                        </label>
+                    </div>
+                    <div class="map-control-group">
+                        <button id="fitBoundsBtn" class="btn-outline btn-sm">
+                            <span>📍 Fit to Results</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="mapContainer" class="map-container"></div>
+                <div class="map-legend">
+                    <div class="legend-item">
+                        <span class="legend-color heat"></span>
+                        <span class="legend-text">Service Density (Heat Map)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color marker"></span>
+                        <span class="legend-text">Individual Services (Markers)</span>
+                    </div>
+                </div>
             </div>
         </section>
         
@@ -163,6 +214,14 @@
         </footer>
     </div>
     
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet Heat Map Plugin -->
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <!-- Alternative: If above doesn't work, try: -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script> -->
+    <!-- Leaflet Marker Cluster -->
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

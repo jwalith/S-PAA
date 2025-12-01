@@ -6,6 +6,14 @@ let organizationsWithCoords = [];
 let zipCoordinatesData = null;
 let cityCoordinatesData = null;
 
+// Map variables
+let map = null;
+let heatLayer = null;
+let markerCluster = null;
+let currentMarkers = [];
+let currentResults = [];
+let showHeatMap = true;
+
 // Check if running in iframe
 if (window.self !== window.top) {
     isIframeMode = true;
@@ -30,6 +38,13 @@ const newSearchBtn = document.getElementById('newSearchBtn');
 const tryAgainBtn = document.getElementById('tryAgainBtn');
 const expandSearchBtn = document.getElementById('expandSearchBtn');
 const retryBtn = document.getElementById('retryBtn');
+const listTabBtn = document.getElementById('listTabBtn');
+const mapTabBtn = document.getElementById('mapTabBtn');
+const listView = document.getElementById('listView');
+const mapView = document.getElementById('mapView');
+const mapContainer = document.getElementById('mapContainer');
+const mapViewToggle = document.getElementById('mapViewToggle');
+const fitBoundsBtn = document.getElementById('fitBoundsBtn');
 
 // URLs from your GitHub repository
 const CSV_URL = 'https://raw.githubusercontent.com/jwalith/Test_github_pages/main/01_master_all_states.csv';
@@ -49,6 +64,20 @@ newSearchBtn.addEventListener('click', resetToSearch);
 tryAgainBtn.addEventListener('click', resetToSearch);
 expandSearchBtn.addEventListener('click', expandSearch);
 retryBtn.addEventListener('click', retryLoadData);
+
+// Tab switching
+if (listTabBtn) {
+    listTabBtn.addEventListener('click', () => switchView('list'));
+}
+if (mapTabBtn) {
+    mapTabBtn.addEventListener('click', () => switchView('map'));
+}
+if (mapViewToggle) {
+    mapViewToggle.addEventListener('change', toggleHeatMap);
+}
+if (fitBoundsBtn) {
+    fitBoundsBtn.addEventListener('click', fitMapToResults);
+}
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -217,7 +246,11 @@ function searchWithFilters() {
     const selectedState = stateSelect.value;
     const selectedHousingType = housingTypeSelect.value;
     
-    let results = organizationsData;
+    // Use organizationsWithCoords to include coordinates for map visualization
+    // Fallback to organizationsData if coordinates haven't loaded yet
+    let results = (organizationsWithCoords && organizationsWithCoords.length > 0) 
+        ? organizationsWithCoords 
+        : organizationsData;
     
     // Filter by zip code if provided
     if (zipCode) {
@@ -502,6 +535,15 @@ function displayResults(results, searchContext = {}) {
             block: 'start' 
         });
     }, 100);
+    
+    // Store current results for map
+    currentResults = results;
+    
+    // Update map with results if map is already initialized
+    // (Map will be initialized when user switches to map view)
+    if (map) {
+        updateMapWithResults(results);
+    }
 }
 
 // Setup event delegation for action buttons (called once on page load)
@@ -870,4 +912,399 @@ function searchByProximityWithFilters(userLat, userLon, radiusMiles, housingType
             distance: Math.round(distance * 10) / 10 // Round to 1 decimal place
         };
     }).sort((a, b) => a.distance - b.distance); // Sort by distance
+}
+
+// ==================== MAP FUNCTIONALITY ====================
+
+// Initialize Leaflet map
+function initializeMap() {
+    if (!mapContainer) {
+        console.error('Map container not found');
+        return;
+    }
+    
+    // Check if Leaflet is loaded
+    if (typeof L === 'undefined') {
+        console.error('Leaflet library not loaded');
+        return;
+    }
+    
+    console.log('Initializing map...');
+    
+    // Create map centered on USA
+    map = L.map('mapContainer', {
+        center: [39.8283, -98.5795], // Geographic center of USA
+        zoom: 4,
+        zoomControl: true,
+        attributionControl: true
+    });
+    
+    // Add OpenStreetMap tiles (free, no API key required)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
+    }).addTo(map);
+    
+    // Check if heat plugin is available
+    if (typeof L.heatLayer !== 'undefined') {
+        console.log('Heat map plugin loaded successfully');
+    } else {
+        console.warn('Heat map plugin not loaded - will use markers only');
+    }
+    
+    // Check if marker cluster is available
+    if (typeof L.markerClusterGroup !== 'undefined') {
+        // Initialize marker cluster group
+        markerCluster = L.markerClusterGroup({
+            chunkedLoading: true,
+            chunkInterval: 200,
+            chunkDelay: 50,
+            spiderfyOnMaxZoom: true,
+            showCoverageOnHover: false,
+            zoomToBoundsOnClick: true
+        });
+        console.log('Marker cluster initialized');
+    } else {
+        console.warn('Marker cluster plugin not loaded');
+    }
+    
+    // Add event listeners for viewport changes
+    let updateTimeout;
+    map.on('moveend', () => {
+        clearTimeout(updateTimeout);
+        updateTimeout = setTimeout(() => {
+            if (showHeatMap && currentResults.length > 0) {
+                updateHeatMap();
+            }
+        }, 300); // Debounce updates
+    });
+    
+    map.on('zoomend', () => {
+        clearTimeout(updateTimeout);
+        updateTimeout = setTimeout(() => {
+            if (showHeatMap && currentResults.length > 0) {
+                updateHeatMap();
+            }
+        }, 300);
+    });
+}
+
+// Switch between List and Map views
+function switchView(view) {
+    if (view === 'list') {
+        listTabBtn.classList.add('active');
+        mapTabBtn.classList.remove('active');
+        listView.style.display = 'block';
+        mapView.style.display = 'none';
+    } else if (view === 'map') {
+        listTabBtn.classList.remove('active');
+        mapTabBtn.classList.add('active');
+        listView.style.display = 'none';
+        mapView.style.display = 'block';
+        
+        // Initialize map if not already done
+        if (!map && mapContainer) {
+            // Small delay to ensure container is visible
+            setTimeout(() => {
+                initializeMap();
+                // Update map with current results after initialization
+                if (map && currentResults.length > 0) {
+                    updateMapWithResults(currentResults);
+                }
+            }, 100);
+        } else if (map) {
+            // Map already exists, just update it
+            map.invalidateSize(); // Ensure map renders correctly
+            if (currentResults.length > 0) {
+                updateMapWithResults(currentResults);
+            }
+        }
+    }
+}
+
+// Toggle between heat map and markers
+function toggleHeatMap() {
+    showHeatMap = mapViewToggle.checked;
+    if (map && currentResults.length > 0) {
+        updateMapWithResults(currentResults);
+    }
+}
+
+// Update map with search results
+function updateMapWithResults(results) {
+    if (!map) {
+        console.error('Map not initialized when trying to update with results');
+        return;
+    }
+    
+    console.log(`Updating map with ${results.length} results`);
+    
+    // Clear existing layers
+    clearMapLayers();
+    
+    // Filter results to only those with coordinates
+    const resultsWithCoords = results.filter(org => 
+        org.latitude && org.longitude && 
+        !isNaN(org.latitude) && !isNaN(org.longitude)
+    );
+    
+    console.log(`Results with coordinates: ${resultsWithCoords.length}`);
+    
+    if (resultsWithCoords.length === 0) {
+        console.warn('No results with coordinates to display on map');
+        return;
+    }
+    
+    if (showHeatMap && typeof L.heatLayer !== 'undefined') {
+        // Show heat map for overview
+        addHeatMapLayer(resultsWithCoords);
+        
+        // Always show markers when zoomed in (zoom level > 6) for better visibility
+        // This helps users see individual locations even with heat map
+        if (map.getZoom() > 6) {
+            addMarkers(resultsWithCoords);
+        }
+    } else {
+        // Show only markers (fallback if heat plugin not available or disabled)
+        console.log('Using markers instead of heat map');
+        addMarkers(resultsWithCoords);
+    }
+    
+    // Fit map to bounds if there are results
+    if (resultsWithCoords.length > 0) {
+        fitMapToResults();
+    }
+}
+
+// Add heat map layer with viewport filtering
+function addHeatMapLayer(results) {
+    if (!map) {
+        console.error('Map not initialized');
+        return;
+    }
+    
+    // Check if heat plugin is loaded
+    if (typeof L.heatLayer === 'undefined') {
+        console.error('Leaflet heat plugin not loaded. Using markers instead.');
+        // Fallback to markers if heat plugin not available
+        addMarkers(results);
+        return;
+    }
+    
+    // For initial display or when zoomed out, show all results
+    // For performance, limit to 5000 points max
+    const maxPoints = 5000;
+    const limitedResults = results.length > maxPoints ? results.slice(0, maxPoints) : results;
+    
+    // Get current map bounds for viewport filtering (only when zoomed in)
+    const zoom = map.getZoom();
+    let visibleResults = limitedResults;
+    
+    // Only filter by viewport when zoomed in (zoom > 6) for better performance
+    if (zoom > 6) {
+        const bounds = map.getBounds();
+        const sw = bounds.getSouthWest();
+        const ne = bounds.getNorthEast();
+        
+        // Filter results to visible area (with some padding)
+        const padding = 0.1; // 10% padding
+        const latRange = ne.lat - sw.lat;
+        const lngRange = ne.lng - sw.lng;
+        
+        visibleResults = limitedResults.filter(org => {
+            return org.latitude >= (sw.lat - latRange * padding) &&
+                   org.latitude <= (ne.lat + latRange * padding) &&
+                   org.longitude >= (sw.lng - lngRange * padding) &&
+                   org.longitude <= (ne.lng + lngRange * padding);
+        });
+    }
+    
+    // Create heat map data points with higher intensity for better visibility
+    const heatData = visibleResults.map(org => [
+        org.latitude,
+        org.longitude,
+        1.0 // Intensity (0-1) - using max intensity for better visibility
+    ]);
+    
+    if (heatData.length > 0) {
+        heatLayer = L.heatLayer(heatData, {
+            radius: 35, // Increased radius for better visibility
+            blur: 20,   // Increased blur for smoother appearance
+            maxZoom: 17,
+            max: 1.0,
+            minOpacity: 0.3, // Minimum opacity to ensure visibility
+            gradient: {
+                0.0: 'rgba(0, 0, 255, 0.4)',    // Blue with opacity
+                0.3: 'rgba(0, 255, 0, 0.6)',    // Green with opacity
+                0.6: 'rgba(255, 255, 0, 0.8)',  // Yellow with opacity
+                0.9: 'rgba(255, 165, 0, 0.9)',  // Orange with opacity
+                1.0: 'rgba(255, 0, 0, 1.0)'     // Red with full opacity
+            }
+        }).addTo(map);
+        
+        console.log(`Heat map added with ${heatData.length} points`);
+    } else {
+        console.warn('No heat map data points to display');
+    }
+}
+
+// Add markers with clustering
+function addMarkers(results) {
+    if (!map) {
+        console.error('Map not initialized for markers');
+        return;
+    }
+    
+    console.log(`Adding markers for ${results.length} results`);
+    
+    // Get current map bounds for viewport filtering (only when zoomed in)
+    const zoom = map.getZoom();
+    let visibleResults = results;
+    
+    // Only filter by viewport when zoomed in (zoom > 6) for better performance
+    if (zoom > 6) {
+        const bounds = map.getBounds();
+        const sw = bounds.getSouthWest();
+        const ne = bounds.getNorthEast();
+        
+        // Filter to visible area
+        visibleResults = results.filter(org => {
+            return org.latitude >= sw.lat &&
+                   org.latitude <= ne.lat &&
+                   org.longitude >= sw.lng &&
+                   org.longitude <= ne.lng;
+        });
+    }
+    
+    // Limit markers for performance (max 2000 at a time)
+    const limitedResults = visibleResults.slice(0, 2000);
+    
+    console.log(`Displaying ${limitedResults.length} markers (filtered from ${results.length})`);
+    
+    // Clear existing markers
+    if (markerCluster) {
+        markerCluster.clearLayers();
+    }
+    currentMarkers = [];
+    
+    // Create markers with custom icons for better visibility
+    const defaultIcon = L.icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+    });
+    
+    // Create markers
+    limitedResults.forEach(org => {
+        try {
+            const marker = L.marker([org.latitude, org.longitude], {
+                title: org.name,
+                icon: defaultIcon
+            });
+            
+            // Create popup content
+            const popupContent = createMarkerPopup(org);
+            marker.bindPopup(popupContent, {
+                maxWidth: 300,
+                className: 'custom-popup'
+            });
+            
+            if (markerCluster) {
+                markerCluster.addLayer(marker);
+            } else {
+                // Fallback: add directly to map if clustering not available
+                marker.addTo(map);
+            }
+            
+            currentMarkers.push(marker);
+        } catch (error) {
+            console.error(`Error creating marker for ${org.name}:`, error);
+        }
+    });
+    
+    // Add cluster group to map if available
+    if (markerCluster && currentMarkers.length > 0) {
+        map.addLayer(markerCluster);
+        console.log(`Added ${currentMarkers.length} markers to map`);
+    }
+}
+
+// Create popup content for markers
+function createMarkerPopup(org) {
+    const distanceInfo = org.distance ? `<p><strong>Distance:</strong> ${org.distance} miles</p>` : '';
+    const phoneLink = org.phone ? `<p><strong>Phone:</strong> <a href="tel:${org.phone}">${org.phone}</a></p>` : '';
+    const emailLink = org.email ? `<p><strong>Email:</strong> <a href="mailto:${org.email}">${org.email}</a></p>` : '';
+    
+    return `
+        <div class="marker-popup">
+            <h4>${escapeHtml(org.name)}</h4>
+            <p><strong>Type:</strong> ${escapeHtml(org.type)}</p>
+            <p><strong>Location:</strong> ${escapeHtml(org.city)}, ${escapeHtml(org.state)} ${escapeHtml(org.zip || '')}</p>
+            ${org.address ? `<p><strong>Address:</strong> ${escapeHtml(org.address)}</p>` : ''}
+            ${distanceInfo}
+            ${phoneLink}
+            ${emailLink}
+        </div>
+    `;
+}
+
+// Clear all map layers
+function clearMapLayers() {
+    if (heatLayer) {
+        map.removeLayer(heatLayer);
+        heatLayer = null;
+    }
+    
+    if (markerCluster) {
+        markerCluster.clearLayers();
+    }
+    
+    currentMarkers = [];
+}
+
+// Fit map bounds to show all results
+function fitMapToResults() {
+    if (!map || currentResults.length === 0) return;
+    
+    const resultsWithCoords = currentResults.filter(org => 
+        org.latitude && org.longitude && 
+        !isNaN(org.latitude) && !isNaN(org.longitude)
+    );
+    
+    if (resultsWithCoords.length === 0) return;
+    
+    // Create bounds from all results
+    const bounds = L.latLngBounds(
+        resultsWithCoords.map(org => [org.latitude, org.longitude])
+    );
+    
+    // Fit map to bounds with padding
+    map.fitBounds(bounds, {
+        padding: [50, 50],
+        maxZoom: 12
+    });
+}
+
+// Update heat map when viewport changes (called by map event listeners)
+function updateHeatMap() {
+    if (!showHeatMap || !map || currentResults.length === 0) return;
+    
+    // Remove old heat layer
+    if (heatLayer) {
+        map.removeLayer(heatLayer);
+        heatLayer = null;
+    }
+    
+    // Add new heat layer with filtered data
+    const resultsWithCoords = currentResults.filter(org => 
+        org.latitude && org.longitude && 
+        !isNaN(org.latitude) && !isNaN(org.longitude)
+    );
+    
+    if (resultsWithCoords.length > 0) {
+        addHeatMapLayer(resultsWithCoords);
+    }
 }

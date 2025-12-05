@@ -79,6 +79,18 @@ if (fitBoundsBtn) {
     fitBoundsBtn.addEventListener('click', fitMapToResults);
 }
 
+// Instructions toggle
+const instructionsToggle = document.getElementById('instructionsToggle');
+const instructionsContent = document.getElementById('instructionsContent');
+
+if (instructionsToggle && instructionsContent) {
+    instructionsToggle.addEventListener('click', function() {
+        const isExpanded = instructionsToggle.getAttribute('aria-expanded') === 'true';
+        instructionsContent.style.display = isExpanded ? 'none' : 'block';
+        instructionsToggle.setAttribute('aria-expanded', !isExpanded);
+    });
+}
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
     // Setup event delegation for action buttons (once on page load)
@@ -416,7 +428,7 @@ function handleSearchWithFilters() {
     
     // Check if at least one search criteria is provided
     if (!zipCode && !selectedState && !selectedHousingType) {
-        showUserMessage('Please enter a zip code, select a state, or choose a service type to search', 'warning');
+        showUserMessage('⚠️ Please select at least one search option: Enter a zip code, select a state, or choose a service type. You cannot search for all services in all states at once.', 'warning');
         return;
     }
     

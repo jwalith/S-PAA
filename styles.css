@@ -140,12 +140,214 @@ header {
     padding: var(--space-4);
     border-radius: var(--radius-lg);
     border-left: 4px solid var(--primary-blue);
+    color: var(--gray-700);
+    font-size: var(--font-size-base);
+    line-height: 1.6;
+    margin: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
 }
 
 .help-text p {
     color: var(--gray-700);
     font-size: var(--font-size-lg);
     margin: 0;
+}
+
+.help-icon {
+    font-size: var(--font-size-lg);
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.help-text strong {
+    color: var(--gray-900);
+    font-weight: 600;
+}
+
+/* Instructions Section */
+.instructions-section {
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--gray-200);
+    margin-bottom: var(--space-8);
+}
+
+.instructions-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4) var(--space-6);
+    background: linear-gradient(135deg, var(--primary-blue), var(--secondary-green));
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius-lg);
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    gap: var(--space-3);
+}
+
+.instructions-toggle:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.instructions-toggle:focus {
+    outline: 3px solid var(--primary-blue-light);
+    outline-offset: 2px;
+}
+
+.instructions-toggle[aria-expanded="true"] .instructions-arrow {
+    transform: rotate(180deg);
+}
+
+.instructions-icon {
+    font-size: var(--font-size-xl);
+}
+
+.instructions-text {
+    flex: 1;
+    text-align: left;
+}
+
+.instructions-arrow {
+    font-size: var(--font-size-lg);
+    transition: transform 0.3s ease;
+}
+
+.instructions-content {
+    padding: var(--space-6);
+    margin-top: var(--space-4);
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray-200);
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.instructions-steps {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    margin-bottom: var(--space-6);
+}
+
+.instruction-step {
+    display: flex;
+    gap: var(--space-4);
+    background: var(--white);
+    padding: var(--space-5);
+    border-radius: var(--radius-md);
+    border-left: 4px solid var(--primary-blue);
+    box-shadow: var(--shadow-sm);
+}
+
+.step-number {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--primary-blue), var(--secondary-green));
+    color: var(--white);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: var(--font-size-lg);
+}
+
+.step-content {
+    flex: 1;
+}
+
+.step-content h4 {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: var(--gray-900);
+    margin-bottom: var(--space-2);
+}
+
+.step-content p {
+    color: var(--gray-700);
+    margin-bottom: var(--space-2);
+    line-height: 1.6;
+}
+
+.step-content ul {
+    margin-left: var(--space-5);
+    margin-top: var(--space-2);
+    color: var(--gray-700);
+}
+
+.step-content li {
+    margin-bottom: var(--space-1);
+    line-height: 1.6;
+}
+
+.instructions-tips {
+    background: linear-gradient(135deg, var(--info), var(--secondary-green));
+    color: var(--white);
+    padding: var(--space-5);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.instructions-tips h4 {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    margin-bottom: var(--space-3);
+    color: var(--white);
+}
+
+.instructions-tips ul {
+    margin-left: var(--space-5);
+    color: var(--white);
+}
+
+.instructions-tips li {
+    margin-bottom: var(--space-2);
+    line-height: 1.6;
+}
+
+/* Responsive Instructions */
+@media (max-width: 768px) {
+    .instructions-section {
+        padding: var(--space-4);
+    }
+    
+    .instructions-toggle {
+        font-size: var(--font-size-base);
+        padding: var(--space-3) var(--space-4);
+    }
+    
+    .instruction-step {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .step-number {
+        margin: 0 auto;
+    }
+    
+    .step-content {
+        text-align: left;
+    }
 }
 
 /* Main Content */

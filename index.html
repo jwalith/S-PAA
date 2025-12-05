@@ -28,6 +28,82 @@
             </div>
         </header>
         
+        <!-- Instructions Section -->
+        <section class="instructions-section">
+            <button class="instructions-toggle" id="instructionsToggle" aria-expanded="false">
+                <span class="instructions-icon">📖</span>
+                <span class="instructions-text">How to Use This Website</span>
+                <span class="instructions-arrow">▼</span>
+            </button>
+            <div class="instructions-content" id="instructionsContent" style="display: none;">
+                <div class="instructions-steps">
+                    <div class="instruction-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>Choose Your Search Method</h4>
+                            <p><strong>Option A - Search by Location:</strong> You must select at least one option: Enter a zip code, select a state, or choose a service type. You can combine multiple options for more specific results. <em>Note: You cannot search for all services in all states at once.</em></p>
+                            <p><strong>Option B - Find Near Me:</strong> Click "Find Near Me" to use your current location. You can select a search radius (5-50 miles) and optionally filter by service type.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="instruction-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>View Your Results</h4>
+                            <p>Results appear in two views:</p>
+                            <ul>
+                                <li><strong>List View:</strong> See all services with details like name, location, phone, and email</li>
+                                <li><strong>Map View:</strong> See services on an interactive map with a heat map showing service density</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="instruction-step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>Using the Map View</h4>
+                            <p>The map provides a visual way to explore services:</p>
+                            <ul>
+                                <li><strong>Heat Map (Default):</strong> Shows service density with colors - brighter red/yellow areas mean more services in that location. This helps you quickly identify areas with many resources.</li>
+                                <li><strong>Individual Markers:</strong> Blue pins show each service location. Click on a marker to see the organization name and details. Markers cluster together when zoomed out to prevent clutter.</li>
+                                <li><strong>Toggle Views:</strong> Use the "Show Heat Map" checkbox to switch between heat map view and individual markers</li>
+                                <li><strong>Zoom & Pan:</strong> Zoom in to see individual markers, zoom out to see density patterns. Drag the map to explore different areas</li>
+                                <li><strong>Fit to Results:</strong> Click "📍 Fit to Results" button to automatically zoom the map to show all your search results</li>
+                                <li><strong>Map Legend:</strong> The legend at the bottom explains what the colors and markers mean</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="instruction-step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h4>Take Action on Results</h4>
+                            <p>For each service in the list view, you can:</p>
+                            <ul>
+                                <li><strong>📞 Click phone numbers</strong> to call directly (on mobile devices)</li>
+                                <li><strong>✉️ Click email addresses</strong> to send an email</li>
+                                <li><strong>📋 Copy Name</strong> to copy the organization name to your clipboard</li>
+                                <li><strong>🔍 Search Web</strong> to find more information about the organization online</li>
+                                <li><strong>📍 Directions</strong> to get directions to the location using Google Maps</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="instructions-tips">
+                    <h4>💡 Tips</h4>
+                    <ul>
+                        <li>You don't need to fill all fields - search by state only, service type only, or any combination</li>
+                        <li>If no results appear, try expanding your search (remove filters or increase search radius)</li>
+                        <li>Use "Clear All" to reset your search and start over</li>
+                        <li>Results are sorted by distance when using "Find Near Me"</li>
+                        <li>Switch between List and Map views using the tabs at the top of the results section</li>
+                        <li>The map automatically updates when you change your search filters</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        
         <main class="main-content">
             <!-- Unified Search Interface -->
             <section class="search-section">
@@ -62,7 +138,10 @@
                                 </button>
                             </div>
                         </div>
-                        <p class="help-text">Enter any combination of zip code, state, or service type.</p>
+                        <p class="help-text">
+                            <span class="help-icon">ℹ️</span>
+                            <strong>Note:</strong> Please select at least one option above (zip code, state, or service type) to search. You can combine multiple options for more specific results.
+                        </p>
                     </div>
                     
                     <!-- Location-Based Search -->
